@@ -32,6 +32,10 @@ if (config.KUBE_DEFAULT_USER === 'true') {
   });
 }
 
+if (config.INSECURE_REQUESTS === 'true') {
+  process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+}
+
 const openshift = require('./openshift');
 const k8sApiCore = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);

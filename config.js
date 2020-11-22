@@ -14,6 +14,7 @@ const optionalVariables = {
   'USER_NAME': undefined,
   'USER_TOKEN': undefined,
   'CONTEXT': undefined,
+  'INSECURE_REQUESTS': 'false',
 }
 
 if (fs.existsSync(configFile)) {
