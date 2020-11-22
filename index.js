@@ -48,7 +48,7 @@ const diffuseKinds = [
   'DeploymentConfig',
 ];
 
-watchStart();
+//watchStart();
 
 async function watchStart() {
   console.log('Start watching');
