@@ -63,35 +63,23 @@ async function watchCallback(type, apiObj, watchObj) {
   if (!shouldModify) return;
 
   try {
-    const namespaceName = apiObj.metadata.namespace;
-    if (namespaceName !== 'cip-bot') return;
+    const involvedObject = apiObj.involvedObject;
 
-    const namespace = (await k8sApiCore.readNamespace(namespaceName)).response.body;
-    console.log('NAMESPACE');
-    console.log(namespace);
+    const namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
 
     const metadataLabels = Object.entries(namespace.metadata.labels).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
 
     if (metadataLabels.length === 0) return;
 
-    const involvedObject = apiObj.involvedObject;
     if (diffuseKinds.indexOf(involvedObject.kind) === -1) return;
 
     try {
+      console.log(`${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})`);
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
-      console.log('= = = = = = = = = = = =');
-      console.log('OBJECT');
-      console.log(object.kind);
-      console.log(object.metadata.name);
-      console.log(object.metadata.labels);
       for (const [key, value] of metadataLabels) {
         object.metadata.labels[key] = value;
       }
       const updatedObject = await openshift.updateResource(object);
-      console.log('UPDATED');
-      console.log(updatedObject.kind);
-      console.log(updatedObject.metadata.name);
-      console.log(updatedObject.metadata.labels);
     } catch (e) {
       console.error(e.response.data.message);
     }
