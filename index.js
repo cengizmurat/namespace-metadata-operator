@@ -46,7 +46,7 @@ const diffuseKinds = [
 watchStart();
 
 async function watchStart() {
-  console.log('Start watching');
+  //console.log('Start watching');
   const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
 
   // watch returns a request object which you can use to abort the watch.
@@ -91,7 +91,7 @@ async function watchCallback(type, apiObj, watchObj) {
 }
 
 async function watchEnd(response) {
-  console.log('Watch ended');
+  //console.log('Watch ended');
   // Chain with another watch
   await watchStart();
 }
