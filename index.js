@@ -67,7 +67,7 @@ async function watchCallback(type, apiObj, watchObj) {
 
     const namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
 
-    const metadataLabels = Object.entries(namespace.metadata.labels).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
+    const metadataLabels = Object.entries(namespace.metadata.labels || {}).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
 
     if (metadataLabels.length === 0) return;
 
