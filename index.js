@@ -3,7 +3,7 @@ const k8s = require('@kubernetes/client-node');
 const config = require('./config.js');
 const kc = new k8s.KubeConfig();
 
-if (config.KUBE_DEFAULT_USER) {
+if (config.KUBE_DEFAULT_USER === 'true') {
   console.log(`Loading default Kube configuration`);
   kc.loadFromDefault();
   config.USER_TOKEN = kc.getCurrentUser().token;
