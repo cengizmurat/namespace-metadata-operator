@@ -75,8 +75,6 @@ async function watchCallback(type, apiObj, watchObj) {
     if (metadataLabels.length === 0) return;
 
     const involvedObject = apiObj.involvedObject;
-    console.log('INVOLVED OBJECT');
-    console.log(involvedObject);
     if (diffuseKinds.indexOf(involvedObject.kind) === -1) return;
 
     try {
