@@ -32,8 +32,6 @@ if (config.KUBE_DEFAULT_USER === 'true') {
   });
 }
 
-console.log(kc)
-
 const openshift = require('./openshift');
 const k8sApiCore = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
@@ -45,7 +43,7 @@ const diffuseKinds = [
   'DeploymentConfig',
 ];
 
-//watchStart();
+watchStart();
 
 async function watchStart() {
   console.log('Start watching');
