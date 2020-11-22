@@ -67,11 +67,16 @@ async function watchCallback(type, apiObj, watchObj) {
     if (namespaceName !== 'cip-bot') return;
 
     const namespace = (await k8sApiCore.readNamespace(namespaceName)).response.body;
+    console.log('NAMESPACE');
+    console.log(namespace);
+
     const metadataLabels = Object.entries(namespace.metadata.labels).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
 
     if (metadataLabels.length === 0) return;
 
     const involvedObject = apiObj.involvedObject;
+    console.log('INVOLVED OBJECT');
+    console.log(involvedObject);
     if (diffuseKinds.indexOf(involvedObject.kind) === -1) return;
 
     try {
