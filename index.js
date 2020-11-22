@@ -78,7 +78,7 @@ async function watchCallback(type, apiObj, watchObj) {
     if (diffuseKinds.indexOf(involvedObject.kind) === -1) return;
 
     try {
-      console.log(`${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})`);
+      console.log(`${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
       for (const [key, value] of metadataLabels) {
         object.metadata.labels[key] = value;

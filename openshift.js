@@ -27,8 +27,6 @@ async function updateResource(object) {
   const kind = object.kind;
   const name = object.metadata.name;
 
-  console.log(`[UPDATE] ${name} - ${kind} (${namespace})`);
-
   const url = `/api${apiVersion.indexOf('/') === -1 ? '' : 's'}/${apiVersion}/namespaces/${namespace}/${kind.toLowerCase() + 's'}/${name}`;
   const response = await axiosInstance.put(url, object);
   return response.data;
