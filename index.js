@@ -35,6 +35,8 @@ if (config.KUBERNETES_PORT) {
   });
 }
 
+console.log(kc)
+
 const openshift = require('./openshift');
 const k8sApiCore = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
