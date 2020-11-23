@@ -40,18 +40,19 @@ const openshift = require('./openshift');
 const k8sApiCore = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
 
-const diffuseLabels = [
-  'io.shyrka.erebus/hypnos',
-];
-const diffuseKinds = [
-  'DeploymentConfig',
-];
+const diffuseLabels = config.SPREAD_NAMESPACE_LABELS.split('');
+const diffuseKinds = config.SPREAD_KINDS.split(',').map(kind => kind.toLowerCase());
+
+let watching = false;
 
 watchStart();
 
 async function watchStart() {
-  //console.log('Start watching');
   const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
+  if (!watching) {
+    console.log('Start watching');
+    watching = true;
+  }
 
   // watch returns a request object which you can use to abort the watch.
   // request.abort();
@@ -68,6 +69,7 @@ async function watchCallback(type, apiObj, watchObj) {
 
   try {
     const involvedObject = apiObj.involvedObject;
+    if (!involvedObject.namespace) return;
 
     const namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
 
@@ -75,7 +77,7 @@ async function watchCallback(type, apiObj, watchObj) {
 
     if (metadataLabels.length === 0) return;
 
-    if (diffuseKinds.indexOf(involvedObject.kind) === -1) return;
+    if (diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
 
     try {
       console.log(`${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));

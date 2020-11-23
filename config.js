@@ -15,6 +15,8 @@ const optionalVariables = {
   'USER_TOKEN': undefined,
   'CONTEXT': undefined,
   'INSECURE_REQUESTS': 'false',
+  'SPREAD_NAMESPACE_LABELS': '',
+  'SPREAD_KINDS': '',
 }
 
 if (fs.existsSync(configFile)) {
