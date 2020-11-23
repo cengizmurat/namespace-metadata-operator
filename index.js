@@ -47,7 +47,23 @@ let watching = false;
 
 watchStart();
 
+const cacheTime = parseInt(config.CACHE_TIME) * 1000;
+const namespacesCache = {};
+
+async function initCache() {
+  const namespaces = (await k8sApiCore.listNamespace()).response.body;
+  const now = new Date();
+  for (const namespace of namespaces.items) {
+    namespace.lastUpdated = now;
+    namespacesCache[namespace.metadata.name] = namespace;
+  }
+}
+
 async function watchStart() {
+  if (!watching) {
+    console.log('Initializing cache...');
+    await initCache();
+  }
   const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
   if (!watching) {
     console.log('Start watching');
@@ -71,7 +87,12 @@ async function watchCallback(type, apiObj, watchObj) {
     const involvedObject = apiObj.involvedObject;
     if (!involvedObject.namespace) return;
 
-    const namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
+    let namespace = namespacesCache[involvedObject.namespace];
+    if (!namespace || (new Date() - namespace.lastUpdated > cacheTime)) {
+      namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
+      namespace.lastUpdated = new Date();
+      namespacesCache[involvedObject.namespace] = namespace;
+    }
 
     const metadataLabels = Object.entries(namespace.metadata.labels || {}).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
 
