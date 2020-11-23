@@ -40,7 +40,7 @@ const openshift = require('./openshift');
 const k8sApiCore = kc.makeApiClient(k8s.CoreV1Api);
 const watch = new k8s.Watch(kc);
 
-const diffuseLabels = config.SPREAD_NAMESPACE_LABELS.split('');
+const diffuseLabels = config.SPREAD_NAMESPACE_LABELS.split(',');
 const diffuseKinds = config.SPREAD_KINDS.split(',').map(kind => kind.toLowerCase());
 
 let watching = false;
@@ -52,9 +52,7 @@ const namespacesCache = {};
 
 async function initCache() {
   const namespaces = (await k8sApiCore.listNamespace()).response.body;
-  const now = new Date();
   for (const namespace of namespaces.items) {
-    namespace.lastUpdated = now;
     namespacesCache[namespace.metadata.name] = namespace;
   }
 }
@@ -63,6 +61,7 @@ async function watchStart() {
   if (!watching) {
     console.log('Initializing cache...');
     await initCache();
+    setInterval(initCache, cacheTime);
   }
   const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
   if (!watching) {
@@ -88,9 +87,8 @@ async function watchCallback(type, apiObj, watchObj) {
     if (!involvedObject.namespace) return;
 
     let namespace = namespacesCache[involvedObject.namespace];
-    if (!namespace || (new Date() - namespace.lastUpdated > cacheTime)) {
+    if (!namespace) {
       namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
-      namespace.lastUpdated = new Date();
       namespacesCache[involvedObject.namespace] = namespace;
     }
 
@@ -101,7 +99,7 @@ async function watchCallback(type, apiObj, watchObj) {
     if (diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
 
     try {
-      console.log(`${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));
+      console.log(`= = = =\n${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
       for (const [key, value] of metadataLabels) {
         object.metadata.labels[key] = value;
