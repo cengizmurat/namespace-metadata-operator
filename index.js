@@ -84,6 +84,10 @@ async function watchCallback(type, apiObj, watchObj) {
 
   try {
     const involvedObject = apiObj.involvedObject;
+
+    // Check resource kind
+    if (diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
+
     if (!involvedObject.namespace) return;
 
     let namespace = namespacesCache[involvedObject.namespace];
@@ -94,17 +98,25 @@ async function watchCallback(type, apiObj, watchObj) {
 
     const metadataLabels = Object.entries(namespace.metadata.labels || {}).filter(entry => diffuseLabels.indexOf(entry[0]) !== -1);
 
+    // Check namespace metadata labels
     if (metadataLabels.length === 0) return;
-
-    if (diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
 
     try {
       console.log(`= = = =\n${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));
+
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
+      object.metadata.labels = object.metadata.labels || {};
+
+      let changed = false;
       for (const [key, value] of metadataLabels) {
-        object.metadata.labels[key] = value;
+        const label = object.metadata.labels[key];
+        if (label !== value) {
+          object.metadata.labels[key] = value;
+          changed = true;
+        }
       }
-      const updatedObject = await openshift.updateResource(object);
+
+      if (changed) await openshift.updateResource(object);
     } catch (e) {
       console.error(e.response.data.message);
     }
