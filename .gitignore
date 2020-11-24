@@ -13,3 +13,5 @@ bin
 *.swo
 *~
 config.json
+
+node_modules
