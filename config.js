@@ -8,7 +8,7 @@ const variables = [
 // Optional variables and their default values
 const optionalVariables = {
   'KUBERNETES_PORT': undefined,
-  'KUBE_DEFAULT_USER': 'true',
+  'KUBE_DEFAULT_USER': 'false',
   'CLUSTER_SERVER': undefined,
   'CLUSTER_NAME': undefined,
   'USER_NAME': undefined,
