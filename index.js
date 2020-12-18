@@ -86,7 +86,7 @@ async function watchCallback(type, apiObj, watchObj) {
     const involvedObject = apiObj.involvedObject;
 
     // Check resource kind
-    if (diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
+    if (involvedObject.kind && diffuseKinds.indexOf(involvedObject.kind.toLowerCase()) === -1) return;
 
     if (!involvedObject.namespace) return;
 
