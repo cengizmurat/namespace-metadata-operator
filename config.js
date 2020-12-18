@@ -18,6 +18,7 @@ const optionalVariables = {
   'SPREAD_NAMESPACE_LABELS': '',
   'SPREAD_KINDS': '',
   'CACHE_TIME': '180',
+  'LOG_RESTART': 'false',
 }
 
 if (fs.existsSync(configFile)) {

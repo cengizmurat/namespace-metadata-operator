@@ -43,6 +43,7 @@ const watch = new k8s.Watch(kc);
 const diffuseLabels = config.SPREAD_NAMESPACE_LABELS.split(',');
 const diffuseKinds = config.SPREAD_KINDS.split(',').map(kind => kind.toLowerCase());
 
+const logRestart = config.LOG_RESTART === 'true';
 let watching = false;
 
 watchStart();
@@ -63,11 +64,15 @@ async function watchStart() {
     await initCache();
     setInterval(initCache, cacheTime);
   }
-  const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
+
+  const now = new Date().toISOString();
   if (!watching) {
-    console.log('Start watching');
+    console.log(`[${now}] Start watching`);
     watching = true;
+  } else if (logRestart) {
+    console.log(`[${now}] Restart watching`);
   }
+  const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
 
   // watch returns a request object which you can use to abort the watch.
   // request.abort();
@@ -102,7 +107,10 @@ async function watchCallback(type, apiObj, watchObj) {
     if (metadataLabels.length === 0) return;
 
     try {
-      console.log(`= = = =\n${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n` + metadataLabels.map(entry => entry.join('=')).join('\n'));
+      let logMessage = `[${new Date().toISOString()}]\n`;
+      logMessage += `${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n`;
+      logMessage += metadataLabels.map(entry => entry.join('=')).join('\n');
+      console.log(logMessage);
 
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
       object.metadata.labels = object.metadata.labels || {};
@@ -128,7 +136,10 @@ async function watchCallback(type, apiObj, watchObj) {
 }
 
 async function watchEnd(response) {
-  //console.log('Watch ended');
+  if (logRestart) {
+    console.log(`[${new Date().toISOString()}] Watch ended`);
+  }
+
   // Chain with another watch
   await watchStart();
 }
