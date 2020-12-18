@@ -3,13 +3,15 @@ const k8s = require('@kubernetes/client-node');
 const config = require('./config.js');
 const kc = new k8s.KubeConfig();
 
+const logLevel = parseInt(config.LOG_LEVEL);
+
 if (config.KUBE_DEFAULT_USER === 'true') {
-  console.log(`Loading default Kube configuration`);
+  logMessage(`Loading default Kube configuration`);
   kc.loadFromDefault();
   config.USER_TOKEN = kc.getCurrentUser().token;
   config.CLUSTER_SERVER = kc.getCurrentCluster().server;
 } else {
-  console.log(`Loading Kube configuration from environment variables`);
+  logMessage(`Loading Kube configuration from environment variables`);
   const cluster = {
     name: config.CLUSTER_NAME,
     server: config.CLUSTER_SERVER,
@@ -43,7 +45,6 @@ const watch = new k8s.Watch(kc);
 const diffuseLabels = config.SPREAD_NAMESPACE_LABELS.split(',');
 const diffuseKinds = config.SPREAD_KINDS.split(',').map(kind => kind.toLowerCase());
 
-const logRestart = config.LOG_RESTART === 'true';
 let watching = false;
 
 watchStart();
@@ -52,6 +53,7 @@ const cacheTime = parseInt(config.CACHE_TIME) * 1000;
 const namespacesCache = {};
 
 async function initCache() {
+  logMessage(`[${new Date().toISOString()}] GET All Namespaces`, 2);
   const namespaces = (await k8sApiCore.listNamespace()).response.body;
   for (const namespace of namespaces.items) {
     namespacesCache[namespace.metadata.name] = namespace;
@@ -60,18 +62,20 @@ async function initCache() {
 
 async function watchStart() {
   if (!watching) {
-    console.log('Initializing cache...');
+    logMessage(`[${new Date().toISOString()}] Cache initializing...`, 1);
     await initCache();
+    logMessage(`[${new Date().toISOString()}] Cache OK`, 1);
     setInterval(initCache, cacheTime);
   }
 
   const now = new Date().toISOString();
   if (!watching) {
-    console.log(`[${now}] Start watching`);
+    logMessage(`[${now}] Start watching`);
     watching = true;
-  } else if (logRestart) {
-    console.log(`[${now}] Restart watching`);
+  } else {
+    logMessage(`[${now}] Restart watching`, 1);
   }
+
   const request = await watch.watch('/api/v1/watch/events', {}, watchCallback, watchEnd);
 
   // watch returns a request object which you can use to abort the watch.
@@ -97,6 +101,7 @@ async function watchCallback(type, apiObj, watchObj) {
 
     let namespace = namespacesCache[involvedObject.namespace];
     if (!namespace) {
+      logMessage(`[${new Date().toISOString()}] GET Namespace "${involvedObject.namespace}"`);
       namespace = (await k8sApiCore.readNamespace(involvedObject.namespace)).response.body;
       namespacesCache[involvedObject.namespace] = namespace;
     }
@@ -107,10 +112,7 @@ async function watchCallback(type, apiObj, watchObj) {
     if (metadataLabels.length === 0) return;
 
     try {
-      let logMessage = `[${new Date().toISOString()}]\n`;
-      logMessage += `${involvedObject.name} - ${involvedObject.kind} (${involvedObject.namespace})\n`;
-      logMessage += metadataLabels.map(entry => entry.join('=')).join('\n');
-      console.log(logMessage);
+      logMessage(`[${new Date().toISOString()}] GET ${involvedObject.kind} "${involvedObject.name}" (namespace "${involvedObject.namespace}")`);
 
       const object = await openshift.getResource(involvedObject.name, involvedObject.kind, involvedObject.namespace, involvedObject.apiVersion);
       object.metadata.labels = object.metadata.labels || {};
@@ -124,7 +126,13 @@ async function watchCallback(type, apiObj, watchObj) {
         }
       }
 
-      if (changed) await openshift.updateResource(object);
+      if (changed) {
+        let message = `[${new Date().toISOString()}] UPDATE ${involvedObject.kind} "${involvedObject.name}" (namespace "${involvedObject.namespace}")`;
+        message += object.metadata.labels.map(entry => entry.join('=')).join('\n');
+        logMessage(message);
+
+        await openshift.updateResource(object);
+      }
     } catch (e) {
       console.error(e.response.data.message);
     }
@@ -136,10 +144,12 @@ async function watchCallback(type, apiObj, watchObj) {
 }
 
 async function watchEnd(response) {
-  if (logRestart) {
-    console.log(`[${new Date().toISOString()}] Watch ended`);
-  }
+  logMessage(`[${new Date().toISOString()}] Watch ended`, 1);
 
   // Chain with another watch
   await watchStart();
+}
+
+function logMessage(message, level = 0) {
+  if (logLevel >= level) console.log(message);
 }
